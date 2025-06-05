@@ -2,7 +2,8 @@
 
 pigco
 ---
-PCからUDPで操作情報を受け取る
+PC->picowはUDP
+picow->Switchは有線
 
 プロコンとしてふるまう部分を拝借
 https://github.com/DavidPagels/retro-pico-switch
