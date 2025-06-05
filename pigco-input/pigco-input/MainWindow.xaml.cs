@@ -165,14 +165,94 @@ namespace pigco_input
         bool Nice = false;
         bool SalmonMode = false;
 
+        bool IkaRoll = false;
+
         double Sin(double hz)
         {
             return Math.Sin(2 * Math.PI * hz * TotalTime);
         }
-        void ResetRad()
+        void ResetPitch()
         {
             Pitch = 7.5 * MathF.PI / 180;
         }
+
+        class MacroRunner
+        {
+            private IEnumerator? _current;
+            private double _wait = 0;
+            public bool IsRunning => _current != null;
+
+            /// <summary>
+            /// マクロ開始。実行中は再実行しない
+            /// </summary>
+            public void Start(IEnumerator macro)
+            {
+                if (IsRunning) return;
+                _current = macro;
+                _wait = 0;
+            }
+
+            /// <summary>
+            /// 進行処理。deltaTimeは秒
+            /// </summary>
+            public void Update(double deltaTime)
+            {
+                if (_current == null) return;
+
+                if (_wait > 0)
+                {
+                    _wait -= deltaTime;
+                    if (_wait > 0) return;
+                }
+
+                if (_current.MoveNext())
+                {
+                    if (_current.Current is double wait)
+                        _wait = wait;
+                    else
+                        _wait = 0;
+                }
+                else
+                {
+                    _current = null;
+                    _wait = 0;
+                }
+            }
+        }
+
+        readonly MacroRunner _ikaRollMacro = new();
+
+        IEnumerator IkaRollMacro()
+        {
+            float LeftStickX = LastLSNonZero.X;
+            float LeftStickY = LastLSNonZero.Y;
+
+            DateTime begin = DateTime.Now;
+
+            _input.LeftStickX = -LeftStickX;
+            _input.LeftStickY = -LeftStickY;
+
+
+            _input.B = true;
+
+            while ((DateTime.Now - begin).TotalSeconds < 0.2)
+            {
+                _input.LeftStickX = -LeftStickX;
+                _input.LeftStickY = -LeftStickY;
+                yield return 0;
+            }
+
+            _input.B = false;
+
+            while ((DateTime.Now - begin).TotalSeconds < 0.5)
+            {
+                _input.LeftStickX = -LeftStickX;
+                _input.LeftStickY = -LeftStickY;
+                yield return 0;
+            }
+        }
+
+        (float X, float Y) LastLSNonZero = (0, 0);
 
         void SendTask(double deltaTime)
         {
@@ -213,6 +293,20 @@ namespace pigco_input
                 }
             }
 
+            if (IkaRoll)
+            {
+                IkaRoll = false;
+                _ikaRollMacro.Start(IkaRollMacro());
+            }
+
+            _ikaRollMacro.Update(deltaTime);
+            
+            if (Math.Sqrt(_input.LeftStickX * _input.LeftStickX + _input.LeftStickY * _input.LeftStickY) > 0)
+            {
+                LastLSNonZero = (_input.LeftStickX, _input.LeftStickY);
+            }
+
+
             int deltaX;
             int deltaY;
             {
@@ -235,7 +329,7 @@ namespace pigco_input
 
             if (_input.Y)
             {
-                ResetRad();
+                ResetPitch();
                 _input.IMU[0] = new();
             }
 
@@ -349,7 +443,10 @@ namespace pigco_input
                     _input.Home = isDown;
                     break;
                 case Keys.C:
-                    _input.Capture = isDown;
+                    if (isDown)
+                    {
+                        IkaRoll = true;
+                    }
                     break;
                 case Keys.D1:
                     _input.L = isDown;
@@ -357,6 +454,7 @@ namespace pigco_input
                 case Keys.D2:
                     _input.R = isDown;
                     break;
+                case Keys.D3:
                 case Keys.UpArrow:
                     _input.Up = isDown;
                     break;
@@ -393,6 +491,9 @@ namespace pigco_input
                     {
                         SalmonMode = !SalmonMode;
                     }
+                    break;
+                case Keys.B:
+                    _input.Capture = isDown;
                     break;
                 default:
                     break;

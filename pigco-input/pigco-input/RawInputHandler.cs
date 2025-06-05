@@ -12,6 +12,11 @@ namespace pigco_input
         private const ushort RIM_TYPEMOUSE = 0x00; // Raw Input Type: Mouse
         private const ushort RIM_TYPEKEYBOARD = 0x01; // Raw Input Type: Keyboard
 
+        private const ushort HID_USAGE_PAGE_GENERIC = 0x01;
+        private const ushort HID_USAGE_GENERIC_MOUSE = 0x02;
+        private const ushort HID_USAGE_GENERIC_KEYBOARD = 0x06;
+        private const uint RIDEV_INPUTSINK = 0x00000100;
+
         // キーボードフラグ
         private const ushort RI_KEY_MAKE = 0x00; // キーが押された
         private const ushort RI_KEY_BREAK = 0x01; // キーが離された
@@ -144,14 +149,14 @@ namespace pigco_input
             var devices = new RAWINPUTDEVICE[2];
 
             // マウス
-            devices[0].UsagePage = 0x01;
-            devices[0].Usage = 0x02;
+            devices[0].UsagePage = HID_USAGE_PAGE_GENERIC;
+            devices[0].Usage = HID_USAGE_GENERIC_MOUSE;
             devices[0].Flags = 0;
             devices[0].Target = windowHandle;
 
             // キーボード
-            devices[1].UsagePage = 0x01;
-            devices[1].Usage = 0x06;
+            devices[1].UsagePage = HID_USAGE_PAGE_GENERIC;
+            devices[1].Usage = HID_USAGE_GENERIC_KEYBOARD;
             devices[1].Flags = 0;
             devices[1].Target = windowHandle;
 
@@ -253,8 +258,9 @@ namespace pigco_input
 
         private void HandleKeyboardInput(RAWKEYBOARD keyboard)
         {
-            bool isDown = keyboard.Flags == RI_KEY_MAKE;
-            bool isReleased = keyboard.Flags == RI_KEY_BREAK;
+            // 下位2ビットだけで判定
+            bool isDown = (keyboard.Flags & RI_KEY_BREAK) == RI_KEY_MAKE;
+            bool isReleased = (keyboard.Flags & RI_KEY_BREAK) == RI_KEY_BREAK;
 
             if (isDown || isReleased)
             {
