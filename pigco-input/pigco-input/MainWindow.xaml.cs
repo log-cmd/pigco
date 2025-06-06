@@ -284,7 +284,7 @@ namespace pigco_input
                 if (SenpukuStealth || MiniMove)
                 {
                     double len = Math.Sqrt(_input.LeftStickX * _input.LeftStickX + _input.LeftStickY * _input.LeftStickY);
-                    double targetLen = MiniMove ? 0.26 : 0.60;
+                    double targetLen = MiniMove ? 0.25 : 0.84;
                     if (len > targetLen)
                     {
                         _input.LeftStickX = (float)(_input.LeftStickX * targetLen / len);
@@ -300,7 +300,7 @@ namespace pigco_input
             }
 
             _ikaRollMacro.Update(deltaTime);
-            
+
             if (Math.Sqrt(_input.LeftStickX * _input.LeftStickX + _input.LeftStickY * _input.LeftStickY) > 0)
             {
                 LastLSNonZero = (_input.LeftStickX, _input.LeftStickY);
