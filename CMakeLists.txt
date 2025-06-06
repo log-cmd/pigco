@@ -36,7 +36,15 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(pigco main.cpp SwitchUsb.cpp SwitchCommon.cpp)
+add_executable(pigco
+app.cpp
+SwitchCommon.cpp
+SwitchUsb.cpp
+main_sta.cpp
+main_ap.cpp
+dhcpserver/dhcpserver.c
+dnsserver/dnsserver.c
+)
 
 pico_set_program_name(pigco "pigco")
 pico_set_program_version(pigco "0.1")
@@ -54,7 +62,9 @@ target_link_libraries(pigco
 
 # Add the standard include files to the build
 target_include_directories(pigco PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
+    ${CMAKE_CURRENT_LIST_DIR}/dnsserver
 )
 
 # Add any user requested libraries
@@ -62,6 +72,13 @@ target_link_libraries(pigco
     pico_cyw43_arch_lwip_poll
     tinyusb_device
 )
+
+
+# picowをアクセスポイントとして動かす場合は、以下の設定を有効にする
+if(1)
+    target_compile_definitions(pigco PRIVATE PIGCO_USE_AP=1)
+    pico_configure_ip4_address(pigco PRIVATE CYW43_DEFAULT_IP_AP_ADDRESS 192.168.4.1)
+endif()
 
 # Wi-Fi SSID/PASSWORDをCプリプロセッサ定義として渡す
 if(DEFINED WIFI_SSID)

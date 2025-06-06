@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "app.h"
+
 void SwitchCommon::setSwitchRequestReport(uint8_t *report, int report_size)
 {
   memcpy(_switchRequestReport, report, report_size);
@@ -130,10 +132,6 @@ void SwitchCommon::set_timer()
   _report[2] = _timer;
   _timestamp = now;
 }
-
-extern uint8_t from_udp_buffer[64];
-void enterBufferLock();
-void exitBufferLock();
 
 void SwitchCommon::set_full_input_report()
 {

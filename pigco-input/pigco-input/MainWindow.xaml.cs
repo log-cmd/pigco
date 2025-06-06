@@ -17,8 +17,10 @@ namespace pigco_input
     {
         readonly RawInputHandler _rawInputHandler;
         readonly UdpClient _udpClient;
-        readonly IPEndPoint _remoteEndpoint;
         readonly SwitchInput _input;
+
+        readonly IPEndPoint _remote_wifi = new(IPAddress.Parse("192.168.0.83"), 12345);
+        readonly IPEndPoint _remote_ap = new(IPAddress.Parse("192.168.4.1"), 12345);
 
         #region ClipCursor
 
@@ -116,7 +118,6 @@ namespace pigco_input
 
             _rawInputHandler = new();
             _udpClient = new();
-            _remoteEndpoint = new(IPAddress.Parse("192.168.0.83"), 12345);
             _input = new();
 
             new Thread(Th)
@@ -166,6 +167,8 @@ namespace pigco_input
         bool SalmonMode = false;
 
         bool IkaRoll = false;
+
+        bool USE_AP = true;
 
         double Sin(double hz)
         {
@@ -370,7 +373,8 @@ namespace pigco_input
 
             try
             {
-                _udpClient.Send(ms.ToArray(), _remoteEndpoint);
+                IPEndPoint remote = USE_AP ? _remote_ap : _remote_wifi;
+                _udpClient.Send(ms.ToArray(), remote);
             }
             catch (Exception ex)
             {
