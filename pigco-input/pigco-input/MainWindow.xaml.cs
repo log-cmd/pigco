@@ -131,7 +131,7 @@ namespace pigco_input
             while (true)
             {
                 double dt = (DateTime.Now - _LastSend).TotalSeconds;
-                if (dt > 10 / 1000.0)
+                if (dt > 1 / 120.0)
                 {
                     dt = Math.Min(dt, 0.04);
                     SendTask(dt);
@@ -238,7 +238,7 @@ namespace pigco_input
 
             _input.B = true;
 
-            while ((DateTime.Now - begin).TotalSeconds < 0.2)
+            while ((DateTime.Now - begin).TotalSeconds < 0.05)
             {
                 _input.LeftStickX = -LeftStickX;
                 _input.LeftStickY = -LeftStickY;
@@ -247,7 +247,7 @@ namespace pigco_input
 
             _input.B = false;
 
-            while ((DateTime.Now - begin).TotalSeconds < 0.5)
+            while ((DateTime.Now - begin).TotalSeconds < 0.10)
             {
                 _input.LeftStickX = -LeftStickX;
                 _input.LeftStickY = -LeftStickY;
@@ -356,10 +356,17 @@ namespace pigco_input
             }
 
             // タンサン
-            _input.RightStickY = _input.R ? (float)Sin(10) : 0;
+            if (_input.R)
+            {
+                _input.RightStickY = (float)Sin(10);
+            }
+            else
+            {
+                _input.RightStickY = 0;
+            }
 
-            // コピーで動くからコピーでいい
-            _input.IMU[2] = _input.IMU[1];
+                // コピーで動くからコピーでいい
+                _input.IMU[2] = _input.IMU[1];
             _input.IMU[1] = _input.IMU[0];
 
             byte[] buf = SwitchReport.MakeBuf(_input);
