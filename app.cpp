@@ -4,6 +4,8 @@
 
 SwitchCommon *switchCommon = new SwitchUsb();
 
+volatile bool notify_flag = false;
+
 void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
@@ -54,6 +56,7 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_
                 enterBufferLock();
                 memcpy(from_udp_buffer, data + 4, 64);
                 exitBufferLock();
+                notify_flag = true;
             }
         }
     }

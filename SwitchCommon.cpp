@@ -144,6 +144,7 @@ void SwitchCommon::set_full_input_report()
     enterBufferLock();
     memcpy(_report + 3, from_udp_buffer + 2, 64 - 2);
     exitBufferLock();
+    notify_flag = false;
   }
 }
 

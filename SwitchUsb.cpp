@@ -28,6 +28,8 @@
 #include "pico/rand.h"
 #include "tusb.h"
 
+#include "app.h"
+
 static uint16_t _desc_str[32];
 
 // Invoked when received GET DEVICE DESCRIPTOR
@@ -111,7 +113,15 @@ void SwitchUsb::init()
         tud_hid_report(0, report, 64);
       }
 
-      sleep_us(1000); // 無駄なループ抑制
+      // notifyフラグを監視し、trueならcontinue、1msタイムアウト
+      const uint32_t timeout_us = 1000;
+      uint32_t start = time_us_32();
+      while (!notify_flag) {
+        if (time_us_32() - start > timeout_us) {
+          break;
+        }
+        tight_loop_contents();
+      }
     }
     catch (int e)
     {
