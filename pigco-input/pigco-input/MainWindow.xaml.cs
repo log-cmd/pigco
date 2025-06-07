@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Reactive.Bindings;
+using System.Collections;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
@@ -112,6 +113,8 @@ namespace pigco_input
         }
         #endregion
 
+        readonly List<(Keys, string, Action<bool>)> _keyActions;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -119,6 +122,54 @@ namespace pigco_input
             _rawInputHandler = new();
             _udpClient = new();
             _input = new();
+
+            _keyActions =
+            [
+                (Keys.W, "LStickUp", b => { W=b; LastV='W'; }),
+                (Keys.S, "LStickDown", b => { S=b; LastV='S'; }),
+                (Keys.A, "LStickLeft", b => { A=b; LastH='A'; }),
+                (Keys.D, "LStickRight", b => { D=b; LastH='D'; }),
+                (Keys.Mouse_L, "ZR", b => _input.ZR = b),
+                (Keys.Mouse_R, "Senpuku Stealth/A(SalmonMode)", b =>
+                {
+                    if(SalmonMode.Value){ _input.A = b; }
+                    else{ SenpukuStealth = b; }
+                }),
+                (Keys.Mouse_M, "R", b => _input.R = b),
+                (Keys.Mouse_X1, "Rapid Nice", b => Nice = b),
+                (Keys.Mouse_X2, "Rapid ZR", b => {RapidFireZR = b; if(!b){ _input.ZR = false; } }),
+                (Keys.F, "A", b => _input.A = b),
+                (Keys.Space, "B", b => _input.B = b),
+                (Keys.Tab, "X", b => _input.X = b),
+                (Keys.Q, "Y", b => _input.Y = b),
+                (Keys.P, "Plus", b => _input.Plus = b),
+                (Keys.M, "Minus", b => _input.Minus = b),
+                (Keys.LeftShift, "Senpuku Normal", b => SenpukuNormal = b),
+                (Keys.R, "RS", b => _input.RS = b),
+                (Keys.Z, "LS", b => _input.LS = b),
+                (Keys.H, "Home", b => _input.Home = b),
+                (Keys.C, "Ika Roll", b => {if (b) { IkaRoll = true; } }),
+                (Keys.D1, "L", b => _input.L = b),
+                (Keys.D2, "R", b => _input.R = b),
+                (Keys.D3, "Come/Help", b => _input.Up = b),
+                (Keys.F1, "Toggle SalmonMode", b => { if (b) { SalmonMode.Value = !SalmonMode.Value; }}),
+                (Keys.F2, "Toggle USE_AP", b => { if(b){ USE_AP.Value = ! USE_AP.Value; } }),
+                (Keys.B, "Capture", b => _input.Capture = b),
+            ];
+
+            SalmonMode.Subscribe(x =>
+            {
+                if (x)
+                {
+                    SenpukuStealth = false;
+                    SenpukuNormal = false;
+                    MiniMove = false;
+                }
+            });
+
+            KeyListStr.Value = string.Join(", ", _keyActions.Select(x => $"[{x.Item1}] {x.Item2}"));
+
+            this.DataContext = this;
 
             new Thread(Th)
             { IsBackground = true }.Start();
@@ -164,11 +215,12 @@ namespace pigco_input
         double Pitch = 0;
         double TotalTime = 0;
         bool Nice = false;
-        bool SalmonMode = false;
 
         bool IkaRoll = false;
 
-        bool USE_AP = true;
+        public ReactiveProperty<bool> SalmonMode { get; set; } = new(false);
+        public ReactiveProperty<bool> USE_AP { get; set; } = new(true);
+        public ReactiveProperty<string> KeyListStr { get; set; } = new();
 
         double Sin(double hz)
         {
@@ -365,8 +417,8 @@ namespace pigco_input
                 _input.RightStickY = 0;
             }
 
-                // コピーで動くからコピーでいい
-                _input.IMU[2] = _input.IMU[1];
+            // コピーで動くからコピーでいい
+            _input.IMU[2] = _input.IMU[1];
             _input.IMU[1] = _input.IMU[0];
 
             byte[] buf = SwitchReport.MakeBuf(_input);
@@ -380,7 +432,7 @@ namespace pigco_input
 
             try
             {
-                IPEndPoint remote = USE_AP ? _remote_ap : _remote_wifi;
+                IPEndPoint remote = USE_AP.Value ? _remote_ap : _remote_wifi;
                 _udpClient.Send(ms.ToArray(), remote);
             }
             catch (Exception ex)
@@ -391,124 +443,7 @@ namespace pigco_input
 
         void OnKey(Keys key, bool isDown)
         {
-            switch (key)
-            {
-                case Keys.Mouse_L:
-                    _input.ZR = isDown;
-                    break;
-                case Keys.Mouse_R:
-                    if (SalmonMode)
-                    {
-                        _input.A = isDown;
-                    }
-                    else
-                    {
-                        SenpukuStealth = isDown;
-                    }
-                    break;
-                case Keys.Mouse_M:
-                    _input.R = isDown;
-                    break;
-                case Keys.Mouse_X1:
-                    Nice = isDown;
-                    break;
-                case Keys.Mouse_X2:
-                    if (isDown)
-                    {
-                        RapidFireZR = true;
-                    }
-                    else
-                    {
-                        RapidFireZR = false;
-                        _input.ZR = false; // 離した瞬間ZRもOFF
-                    }
-                    break;
-                case Keys.F:
-                    _input.A = isDown;
-                    break;
-                case Keys.Space:
-                    _input.B = isDown;
-                    break;
-                case Keys.Tab:
-                    _input.X = isDown;
-                    break;
-                case Keys.Q:
-                    _input.Y = isDown;
-                    break;
-                case Keys.P:
-                    _input.Plus = isDown;
-                    break;
-                case Keys.M:
-                    _input.Minus = isDown;
-                    break;
-                case Keys.LeftShift:
-                    SenpukuNormal = isDown;
-                    break;
-                case Keys.R:
-                    _input.RS = isDown;
-                    break;
-                case Keys.Z:
-                    _input.LS = isDown;
-                    break;
-                case Keys.H:
-                    _input.Home = isDown;
-                    break;
-                case Keys.C:
-                    if (isDown)
-                    {
-                        IkaRoll = true;
-                    }
-                    break;
-                case Keys.D1:
-                    _input.L = isDown;
-                    break;
-                case Keys.D2:
-                    _input.R = isDown;
-                    break;
-                case Keys.D3:
-                case Keys.UpArrow:
-                    _input.Up = isDown;
-                    break;
-                case Keys.DownArrow:
-                    _input.Down = isDown;
-                    break;
-                case Keys.LeftArrow:
-                    _input.Left = isDown;
-                    break;
-                case Keys.RightArrow:
-                    _input.Right = isDown;
-                    break;
-                case Keys.W:
-                    W = isDown;
-                    LastV = 'W';
-                    break;
-                case Keys.A:
-                    A = isDown;
-                    LastH = 'A';
-                    break;
-                case Keys.S:
-                    S = isDown;
-                    LastV = 'S';
-                    break;
-                case Keys.D:
-                    D = isDown;
-                    LastH = 'D';
-                    break;
-                case Keys.LeftCtrl:
-                    MiniMove = isDown;
-                    break;
-                case Keys.F1:
-                    if (isDown)
-                    {
-                        SalmonMode = !SalmonMode;
-                    }
-                    break;
-                case Keys.B:
-                    _input.Capture = isDown;
-                    break;
-                default:
-                    break;
-            }
+            _keyActions.Where(x => x.Item1 == key).FirstOrDefault().Item3?.Invoke(isDown);
         }
 
         private void Window_SourceInitialized(object sender, EventArgs e)

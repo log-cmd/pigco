@@ -5,9 +5,45 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:pigco_input"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800"
+        Title="pigco-input" Height="450" Width="800"
         Activated="Window_Activated" Deactivated="Window_Deactivated"
-        Loaded="Window_Loaded" Closed="Window_Closed" SourceInitialized="Window_SourceInitialized">
-    <Grid Background="#202020">
+        Loaded="Window_Loaded" Closed="Window_Closed" SourceInitialized="Window_SourceInitialized"
+        Background="#202020"
+        >
+    <Window.Resources>
+        <SolidColorBrush x:Key="DefaultBrush" Color="#AAAAAA"/>
+        <SolidColorBrush x:Key="ActiveBrush" Color="Salmon"/>
+    </Window.Resources>
+
+    <Grid>
+        <StackPanel Orientation="Vertical" Margin="10">
+            <TextBlock Text="{Binding KeyListStr.Value}" TextWrapping="Wrap" Foreground="{StaticResource DefaultBrush}" d:Text="WASD"/>
+            <TextBlock Text="USE_AP">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <!-- デフォルトの文字色 -->
+                        <Setter Property="Foreground" Value="{StaticResource DefaultBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding USE_AP.Value}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource ActiveBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="SalmonMode">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <!-- デフォルトの文字色 -->
+                        <Setter Property="Foreground" Value="{StaticResource DefaultBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SalmonMode.Value}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource ActiveBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </StackPanel>
     </Grid>
 </Window>
