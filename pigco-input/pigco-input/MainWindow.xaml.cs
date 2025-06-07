@@ -125,18 +125,18 @@ namespace pigco_input
 
             _keyActions =
             [
-                (Keys.W, "LStickUp", b => { W=b; LastV='W'; }),
-                (Keys.S, "LStickDown", b => { S=b; LastV='S'; }),
-                (Keys.A, "LStickLeft", b => { A=b; LastH='A'; }),
-                (Keys.D, "LStickRight", b => { D=b; LastH='D'; }),
+                (Keys.W, "LStickUp", b => { LS_U=b; LastLS_V=1; }),
+                (Keys.S, "LStickDown", b => { LS_D=b; LastLS_V=-1; }),
+                (Keys.A, "LStickLeft", b => { LS_L=b; LastLS_H=-1; }),
+                (Keys.D, "LStickRight", b => { LS_R=b; LastLS_H=1; }),
                 (Keys.Mouse_L, "ZR", b => _input.ZR = b),
                 (Keys.Mouse_R, "Senpuku Stealth/A(SalmonMode)", b =>
                 {
                     if(SalmonMode.Value){ _input.A = b; }
                     else{ SenpukuStealth = b; }
                 }),
-                (Keys.Mouse_M, "R", b => _input.R = b),
-                (Keys.Mouse_X1, "Rapid Nice", b => Nice = b),
+                (Keys.Mouse_M, "R", b => Bomb.Value = b),
+                (Keys.Mouse_X1, "Rapid Nice", b => Nice.Value = b),
                 (Keys.Mouse_X2, "Rapid ZR", b => {RapidFireZR = b; if(!b){ _input.ZR = false; } }),
                 (Keys.F, "A", b => _input.A = b),
                 (Keys.Space, "B", b => _input.B = b),
@@ -155,6 +155,16 @@ namespace pigco_input
                 (Keys.F1, "Toggle SalmonMode", b => { if (b) { SalmonMode.Value = !SalmonMode.Value; }}),
                 (Keys.F2, "Toggle USE_AP", b => { if(b){ USE_AP.Value = ! USE_AP.Value; } }),
                 (Keys.B, "Capture", b => _input.Capture = b),
+
+                (Keys.UpArrow, "Up", b => _input.Up = b),
+                (Keys.DownArrow, "Down", b => _input.Down = b),
+                (Keys.LeftArrow, "Left", b => _input.Left = b),
+                (Keys.RightArrow, "Right", b => _input.Right = b),
+
+                (Keys.Numpad8, "RStickUp", b => { RS_U = b; LastRS_V = 1; }),
+                (Keys.Numpad2, "RStickDown", b => { RS_D = b; LastRS_V = -1; }),
+                (Keys.Numpad4, "RStickLeft", b => { RS_L = b; LastRS_H = -1; }),
+                (Keys.Numpad6, "RStickRight", b => { RS_R = b; LastRS_H = 1; }),
             ];
 
             SalmonMode.Subscribe(x =>
@@ -164,6 +174,23 @@ namespace pigco_input
                     SenpukuStealth = false;
                     SenpukuNormal = false;
                     MiniMove = false;
+                }
+            });
+
+            Nice.Subscribe(x =>
+            {
+                if (!x)
+                {
+                    _input.Down = false;
+                }
+            });
+
+            Bomb.Subscribe(x =>
+            {
+                if (!x)
+                {
+                    _input.R = false;
+                    _input.RightStickY = 0;
                 }
             });
 
@@ -192,13 +219,13 @@ namespace pigco_input
             }
         }
 
-        bool W = false;
-        bool A = false;
-        bool S = false;
-        bool D = false;
+        bool LS_U, LS_D, LS_L, LS_R;
+        int LastLS_V = 0;
+        int LastLS_H = 0;
 
-        char LastV = '_';
-        char LastH = '_';
+        bool RS_U, RS_D, RS_L, RS_R;
+        int LastRS_V = 0;
+        int LastRS_H = 0;
 
         int MouseX = 0;
         int MouseY = 0;
@@ -214,9 +241,11 @@ namespace pigco_input
 
         double Pitch = 0;
         double TotalTime = 0;
-        bool Nice = false;
 
         bool IkaRoll = false;
+
+        ReactiveProperty<bool> Nice { get; set; } = new(false);
+        ReactiveProperty<bool> Bomb { get; set; } = new(false);
 
         public ReactiveProperty<bool> SalmonMode { get; set; } = new(false);
         public ReactiveProperty<bool> USE_AP { get; set; } = new(true);
@@ -314,23 +343,26 @@ namespace pigco_input
             TotalTime += deltaTime;
 
             // ナイス連打
-            _input.Down = Nice && Sin(15) > 0;
+            if (Nice.Value)
+            {
+                _input.Down = Sin(15) > 0;
+            }
 
             // 移動
             {
                 // 縦方向
                 _input.LeftStickY = 0;
-                if (LastV == 'W' && W) _input.LeftStickY = 1;
-                else if (LastV == 'S' && S) _input.LeftStickY = -1;
-                else if (W) _input.LeftStickY = 1;
-                else if (S) _input.LeftStickY = -1;
+                if (LastLS_V == 1 && LS_U) _input.LeftStickY = 1;
+                else if (LastLS_V == -1 && LS_D) _input.LeftStickY = -1;
+                else if (LS_U) _input.LeftStickY = 1;
+                else if (LS_D) _input.LeftStickY = -1;
 
                 // 横方向
                 _input.LeftStickX = 0;
-                if (LastH == 'D' && D) _input.LeftStickX = 1;
-                else if (LastH == 'A' && A) _input.LeftStickX = -1;
-                else if (D) _input.LeftStickX = 1;
-                else if (A) _input.LeftStickX = -1;
+                if (LastLS_H == 1 && LS_R) _input.LeftStickX = 1;
+                else if (LastLS_H == -1 && LS_L) _input.LeftStickX = -1;
+                else if (LS_R) _input.LeftStickX = 1;
+                else if (LS_L) _input.LeftStickX = -1;
 
                 // センプク
                 _input.ZL = SenpukuNormal || SenpukuStealth;
@@ -346,6 +378,21 @@ namespace pigco_input
                         _input.LeftStickY = (float)(_input.LeftStickY * targetLen / len);
                     }
                 }
+            }
+
+            // 右スティック
+            {
+                _input.RightStickY = 0;
+                if (LastRS_V == 1 && RS_U) _input.RightStickY = 1;
+                else if (LastRS_V == -1 && RS_D) _input.RightStickY = -1;
+                else if (RS_U) _input.RightStickY = 1;
+                else if (RS_D) _input.RightStickY = -1;
+
+                _input.RightStickX = 0;
+                if (LastRS_H == 1 && RS_R) _input.RightStickX = 1;
+                else if (LastRS_H == -1 && RS_L) _input.RightStickX = -1;
+                else if (RS_R) _input.RightStickX = 1;
+                else if (RS_L) _input.RightStickX = -1;
             }
 
             if (IkaRoll)
@@ -408,13 +455,10 @@ namespace pigco_input
             }
 
             // タンサン
-            if (_input.R)
+            if (Bomb.Value)
             {
+                _input.R = true;
                 _input.RightStickY = (float)Sin(10);
-            }
-            else
-            {
-                _input.RightStickY = 0;
             }
 
             // コピーで動くからコピーでいい
