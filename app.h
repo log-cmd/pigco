@@ -6,7 +6,7 @@
 #include "lwip/udp.h"
 
 extern volatile bool notify_flag;
-extern uint8_t from_udp_buffer[64];
+extern uint8_t from_udp_buffer[22];
 void enterBufferLock();
 void exitBufferLock();
 

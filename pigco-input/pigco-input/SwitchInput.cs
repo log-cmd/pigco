@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -80,11 +81,7 @@ namespace pigco_input
     {
         public static byte[] MakeBuf(in SwitchInput s)
         {
-            byte[] buf = new byte[64];
-
-            buf[0] = 0x30;
-            buf[1] = 0x00; // timestamp
-            buf[2] = 0x00; // battery, connection
+            byte[] buf = new byte[22];
 
             {
                 int btn = 0x00;
@@ -97,7 +94,7 @@ namespace pigco_input
                 btn |= s.R ? 0x40 : 0;
                 btn |= s.ZR ? 0x80 : 0;
 
-                buf[3] = (byte)btn;
+                buf[0] = (byte)btn;
             }
 
             {
@@ -109,7 +106,7 @@ namespace pigco_input
                 btn |= s.Home ? 0x10 : 0;
                 btn |= s.Capture ? 0x20 : 0;
 
-                buf[4] = (byte)btn;
+                buf[1] = (byte)btn;
             }
 
             {
@@ -122,7 +119,7 @@ namespace pigco_input
                 // left SL
                 btn |= s.L ? 0x40 : 0;
                 btn |= s.ZL ? 0x80 : 0;
-                buf[5] = (byte)btn;
+                buf[2] = (byte)btn;
             }
 
             // 12ビットに変換
@@ -139,33 +136,31 @@ namespace pigco_input
             int LS24 = LX | (LY << 12);
             int RS24 = RX | (RY << 12);
 
-            buf[6] = (byte)(LS24);
-            buf[7] = (byte)(LS24 >> 8);
-            buf[8] = (byte)(LS24 >> 16);
-            buf[9] = (byte)(RS24);
-            buf[10] = (byte)(RS24 >> 8);
-            buf[11] = (byte)(RS24 >> 16);
+            buf[3] = (byte)(LS24);
+            buf[4] = (byte)(LS24 >> 8);
+            buf[5] = (byte)(LS24 >> 16);
+            buf[6] = (byte)(RS24);
+            buf[7] = (byte)(RS24 >> 8);
+            buf[8] = (byte)(RS24 >> 16);
 
-            buf[12] = 0; // vibration report
+            buf[9] = 0; // vibration report
 
-            const int IMU_begin = 13;
-
-            for (int i = 0; i < 3; i++)
             {
-                int j = IMU_begin + 12 * i;
-                buf[j + 0] = (byte)(s.IMU[i].Accel.X);
-                buf[j + 1] = (byte)(s.IMU[i].Accel.X >> 8);
-                buf[j + 2] = (byte)(s.IMU[i].Accel.Y);
-                buf[j + 3] = (byte)(s.IMU[i].Accel.Y >> 8);
-                buf[j + 4] = (byte)(s.IMU[i].Accel.Z);
-                buf[j + 5] = (byte)(s.IMU[i].Accel.Z >> 8);
-                buf[j + 6] = (byte)(s.IMU[i].Gyro.X);
-                buf[j + 7] = (byte)(s.IMU[i].Gyro.X >> 8);
-                buf[j + 8] = (byte)(s.IMU[i].Gyro.Y);
-                buf[j + 9] = (byte)(s.IMU[i].Gyro.Y >> 8);
-                buf[j + 10] = (byte)(s.IMU[i].Gyro.Z);
-                buf[j + 11] = (byte)(s.IMU[i].Gyro.Z >> 8);
+                buf[10] = (byte)(s.IMU[0].Accel.X);
+                buf[11] = (byte)(s.IMU[0].Accel.X >> 8);
+                buf[12] = (byte)(s.IMU[0].Accel.Y);
+                buf[13] = (byte)(s.IMU[0].Accel.Y >> 8);
+                buf[14] = (byte)(s.IMU[0].Accel.Z);
+                buf[15] = (byte)(s.IMU[0].Accel.Z >> 8);
+                buf[16] = (byte)(s.IMU[0].Gyro.X);
+                buf[17] = (byte)(s.IMU[0].Gyro.X >> 8);
+                buf[18] = (byte)(s.IMU[0].Gyro.Y);
+                buf[19] = (byte)(s.IMU[0].Gyro.Y >> 8);
+                buf[20] = (byte)(s.IMU[0].Gyro.Z);
+                buf[21] = (byte)(s.IMU[0].Gyro.Z >> 8);
             }
+
+            // IMU1,2はマイコン側でコピーさせる
 
             return buf;
         }

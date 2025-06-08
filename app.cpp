@@ -24,7 +24,7 @@ critical_section_t buffer_lock;
 
 static void initBufferLock()
 {
-    critical_section_exit(&buffer_lock);
+    critical_section_init(&buffer_lock);
 }
 
 void enterBufferLock()
@@ -37,7 +37,7 @@ void exitBufferLock()
     critical_section_exit(&buffer_lock);
 }
 
-uint8_t from_udp_buffer[64];
+uint8_t from_udp_buffer[22];
 
 void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
@@ -51,10 +51,10 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_
         uint8_t *data = (uint8_t *)p->payload;
         if (data[0] == 0x01 && data[1] == 0x02 && data[2] == 0x03 && data[3] == 0x04)
         {
-            if (p->len >= 4 + 64)
+            if (p->len >= 4 + 22)
             {
                 enterBufferLock();
-                memcpy(from_udp_buffer, data + 4, 64);
+                memcpy(from_udp_buffer, data + 4, 22);
                 exitBufferLock();
                 notify_flag = true;
             }

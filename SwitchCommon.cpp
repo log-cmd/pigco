@@ -142,8 +142,10 @@ void SwitchCommon::set_full_input_report()
 
   {
     enterBufferLock();
-    memcpy(_report + 3, from_udp_buffer + 2, 64 - 2);
+    memcpy(_report + 4, from_udp_buffer, 22);
     exitBufferLock();
+    memcpy(_report + 26, _report + 14, 12);
+    memcpy(_report + 38, _report + 14, 12);
     notify_flag = false;
   }
 }
@@ -313,14 +315,14 @@ void SwitchCommon::spi_read()
   {
     // Left/right stick calibration
     uint8_t l_calibration[9] = {
-      0x00, 0x08, 0x80, // xMax yMax
-      0xFF, 0xF7, 0x7F, // xCenter yCenter
-      0xFF, 0xF7, 0x7F  // xMin yMin
+        0x00, 0x08, 0x80, // xMax yMax
+        0xFF, 0xF7, 0x7F, // xCenter yCenter
+        0xFF, 0xF7, 0x7F  // xMin yMin
     };
     uint8_t r_calibration[9] = {
-      0xFF, 0xF7, 0x7F, // xCenter yCenter
-      0xFF, 0xF7, 0x7F, // xMin yMin
-      0x00, 0x08, 0x80  // xMax yMax
+        0xFF, 0xF7, 0x7F, // xCenter yCenter
+        0xFF, 0xF7, 0x7F, // xMin yMin
+        0x00, 0x08, 0x80  // xMax yMax
     };
 
     // Left stick calibration
