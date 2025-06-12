@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:pigco_input"
         mc:Ignorable="d"
         Title="pigco-input" Height="450" Width="800"
+        MouseEnter="Window_MouseEnter"
         Activated="Window_Activated" Deactivated="Window_Deactivated"
         Loaded="Window_Loaded" Closed="Window_Closed" SourceInitialized="Window_SourceInitialized"
         Background="#202020"
@@ -18,19 +19,7 @@
     <Grid>
         <StackPanel Orientation="Vertical" Margin="10">
             <TextBlock Text="{Binding KeyListStr.Value}" TextWrapping="Wrap" Foreground="{StaticResource DefaultBrush}" d:Text="WASD"/>
-            <TextBlock Text="USE_AP">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <!-- デフォルトの文字色 -->
-                        <Setter Property="Foreground" Value="{StaticResource DefaultBrush}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding USE_AP.Value}" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource ActiveBrush}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+            <TextBlock Text="---"/>
             <TextBlock Text="UseStealthSwim">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
