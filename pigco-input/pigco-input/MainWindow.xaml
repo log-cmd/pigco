@@ -31,13 +31,13 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <TextBlock Text="SalmonMode">
+            <TextBlock Text="UseStealthSwim">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <!-- デフォルトの文字色 -->
                         <Setter Property="Foreground" Value="{StaticResource DefaultBrush}"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding SalmonMode.Value}" Value="True">
+                            <DataTrigger Binding="{Binding UseStealthSwim.Value}" Value="True">
                                 <Setter Property="Foreground" Value="{StaticResource ActiveBrush}"/>
                             </DataTrigger>
                         </Style.Triggers>

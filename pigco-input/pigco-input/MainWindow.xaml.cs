@@ -130,21 +130,22 @@ namespace pigco_input
                 (Keys.A, "LStickLeft", b => { LS_L=b; LastLS_H=-1; }),
                 (Keys.D, "LStickRight", b => { LS_R=b; LastLS_H=1; }),
                 (Keys.Mouse_L, "ZR", b => _input.ZR = b),
-                (Keys.Mouse_R, "Senpuku Stealth/A(SalmonMode)", b =>
+                (Keys.Mouse_R, "Swim(Stealth)", b =>
                 {
-                    if(SalmonMode.Value){ _input.A = b; }
-                    else{ SenpukuStealth = b; }
+                    if(UseStealthSwim.Value){ SwimStealth = b; }
+                    else{ Swim2 = b; }
                 }),
                 (Keys.Mouse_M, "R", b => Bomb.Value = b),
                 (Keys.Mouse_X1, "Rapid Nice", b => Nice.Value = b),
-                (Keys.Mouse_X2, "Rapid ZR", b => {RapidFireZR = b; if(!b){ _input.ZR = false; } }),
+                (Keys.Mouse_X2, "Rapid ZR", b => { RapidFireZR = b; if(!b){ _input.ZR = false; } }),
                 (Keys.F, "A", b => _input.A = b),
                 (Keys.Space, "B", b => _input.B = b),
                 (Keys.Tab, "X", b => _input.X = b),
                 (Keys.Q, "Y", b => _input.Y = b),
                 (Keys.P, "Plus", b => _input.Plus = b),
                 (Keys.M, "Minus", b => _input.Minus = b),
-                (Keys.LeftShift, "Senpuku Normal", b => SenpukuNormal = b),
+                (Keys.LeftShift, "Swim", b => Swim = b),
+                (Keys.LeftCtrl, "MicroMove", b => MiniMove = b),
                 (Keys.R, "RS", b => _input.RS = b),
                 (Keys.Z, "LS", b => _input.LS = b),
                 (Keys.H, "Home", b => _input.Home = b),
@@ -152,7 +153,7 @@ namespace pigco_input
                 (Keys.D1, "L", b => _input.L = b),
                 (Keys.D2, "R", b => _input.R = b),
                 (Keys.D3, "Come/Help", b => _input.Up = b),
-                (Keys.F1, "Toggle SalmonMode", b => { if (b) { SalmonMode.Value = !SalmonMode.Value; }}),
+                (Keys.F1, "Toggle UseStealthSwim", b => { if (b) { UseStealthSwim.Value = !UseStealthSwim.Value; }}),
                 (Keys.F2, "Toggle USE_AP", b => { if(b){ USE_AP.Value = ! USE_AP.Value; } }),
                 (Keys.B, "Capture", b => _input.Capture = b),
 
@@ -165,14 +166,16 @@ namespace pigco_input
                 (Keys.Numpad2, "RStickDown", b => { RS_D = b; LastRS_V = -1; }),
                 (Keys.Numpad4, "RStickLeft", b => { RS_L = b; LastRS_H = -1; }),
                 (Keys.Numpad6, "RStickRight", b => { RS_R = b; LastRS_H = 1; }),
+
+                (Keys.D6, "ReturnBase", b => { if(b){ ReturnBase = true;  } }),
             ];
 
-            SalmonMode.Subscribe(x =>
+            UseStealthSwim.Subscribe(x =>
             {
                 if (x)
                 {
-                    SenpukuStealth = false;
-                    SenpukuNormal = false;
+                    SwimStealth = false;
+                    Swim = false;
                     MiniMove = false;
                 }
             });
@@ -230,8 +233,9 @@ namespace pigco_input
         int MouseX = 0;
         int MouseY = 0;
 
-        bool SenpukuNormal = false;
-        bool SenpukuStealth = false;
+        bool Swim = false;
+        bool Swim2 = false;
+        bool SwimStealth = false;
         bool MiniMove = false;
 
         bool RapidFireZR = false;
@@ -243,11 +247,12 @@ namespace pigco_input
         double TotalTime = 0;
 
         bool IkaRoll = false;
+        bool ReturnBase = false;
 
         ReactiveProperty<bool> Nice { get; set; } = new(false);
         ReactiveProperty<bool> Bomb { get; set; } = new(false);
 
-        public ReactiveProperty<bool> SalmonMode { get; set; } = new(false);
+        public ReactiveProperty<bool> UseStealthSwim { get; set; } = new(true);
         public ReactiveProperty<bool> USE_AP { get; set; } = new(true);
         public ReactiveProperty<string> KeyListStr { get; set; } = new();
 
@@ -305,6 +310,7 @@ namespace pigco_input
         }
 
         readonly MacroRunner _ikaRollMacro = new();
+        readonly MacroRunner _returnBaseMacro = new();
 
         IEnumerator IkaRollMacro()
         {
@@ -319,7 +325,7 @@ namespace pigco_input
 
             _input.B = true;
 
-            while ((DateTime.Now - begin).TotalSeconds < 0.05)
+            while ((DateTime.Now - begin).TotalMilliseconds < 50)
             {
                 _input.LeftStickX = -LeftStickX;
                 _input.LeftStickY = -LeftStickY;
@@ -328,12 +334,42 @@ namespace pigco_input
 
             _input.B = false;
 
-            while ((DateTime.Now - begin).TotalSeconds < 0.10)
+            while ((DateTime.Now - begin).TotalMilliseconds < 100)
             {
                 _input.LeftStickX = -LeftStickX;
                 _input.LeftStickY = -LeftStickY;
                 yield return 0;
             }
+        }
+
+        IEnumerator ReturnBaseMacro()
+        {
+            DateTime begin = DateTime.Now;
+
+            // X -> Down -> A
+
+            // 押してない時間を確保
+            while ((DateTime.Now - begin).TotalMilliseconds < 33)
+            {
+                _input.X = false;
+                _input.Down = false;
+                _input.A = false;
+                yield return 0;
+            }
+
+            double pushTime = 1.0 / 20;
+
+            _input.X = true;
+            yield return pushTime;
+            _input.X = false;
+            yield return 0.2;
+            _input.Down = true;
+            yield return pushTime;
+            _input.Down = false;
+            yield return pushTime;
+            _input.A = true;
+            yield return pushTime;
+            _input.A = false;
         }
 
         (float X, float Y) LastLSNonZero = (0, 0);
@@ -365,10 +401,10 @@ namespace pigco_input
                 else if (LS_L) _input.LeftStickX = -1;
 
                 // センプク
-                _input.ZL = SenpukuNormal || SenpukuStealth;
+                _input.ZL = Swim || Swim2 || SwimStealth;
 
                 // しぶきが飛ばない調整
-                if (SenpukuStealth || MiniMove)
+                if (SwimStealth || MiniMove)
                 {
                     double len = Math.Sqrt(_input.LeftStickX * _input.LeftStickX + _input.LeftStickY * _input.LeftStickY);
                     double targetLen = MiniMove ? 0.25 : 0.84;
@@ -402,6 +438,14 @@ namespace pigco_input
             }
 
             _ikaRollMacro.Update(deltaTime);
+
+            if (ReturnBase)
+            {
+                ReturnBase = false;
+                _returnBaseMacro.Start(ReturnBaseMacro());
+            }
+
+            _returnBaseMacro.Update(deltaTime);
 
             if (Math.Sqrt(_input.LeftStickX * _input.LeftStickX + _input.LeftStickY * _input.LeftStickY) > 0)
             {
