@@ -28,6 +28,8 @@
 //  https://www.ietf.org/rfc/rfc2131.txt
 //  https://tools.ietf.org/html/rfc2132 -- DHCP Options and BOOTP Vendor Extensions
 
+#if PIGCO_PICOW_AP
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -307,3 +309,5 @@ void dhcp_server_init(dhcp_server_t *d, ip_addr_t *ip, ip_addr_t *nm) {
 void dhcp_server_deinit(dhcp_server_t *d) {
     dhcp_socket_free(&d->udp);
 }
+
+#endif // PIGCO_PICOW_AP

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#if PIGCO_PICOW_AP
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -233,3 +235,5 @@ void dns_server_init(dns_server_t *d, ip_addr_t *ip) {
 void dns_server_deinit(dns_server_t *d) {
     dns_socket_free(&d->udp);
 }
+
+#endif // PIGCO_PICOW_AP

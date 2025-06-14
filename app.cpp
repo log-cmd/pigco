@@ -39,29 +39,18 @@ void exitBufferLock()
 
 uint8_t from_udp_buffer[22];
 
-void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+void app_recv(uint8_t *data, size_t len)
 {
-    if (!p)
+    if (len >= 4 && data[0] == 0x01 && data[1] == 0x02 && data[2] == 0x03 && data[3] == 0x04)
     {
-        return;
-    }
-
-    if (p->len >= 4)
-    {
-        uint8_t *data = (uint8_t *)p->payload;
-        if (data[0] == 0x01 && data[1] == 0x02 && data[2] == 0x03 && data[3] == 0x04)
+        if (len >= 4 + 22)
         {
-            if (p->len >= 4 + 22)
-            {
-                enterBufferLock();
-                memcpy(from_udp_buffer, data + 4, 22);
-                exitBufferLock();
-                notify_flag = true;
-            }
+            enterBufferLock();
+            memcpy(from_udp_buffer, data + 4, 22);
+            exitBufferLock();
+            notify_flag = true;
         }
     }
-
-    pbuf_free(p);
 }
 
 void app_init()
