@@ -48,6 +48,7 @@ add_executable(pigco
     main.cpp
     lib/dhcpserver/dhcpserver.c 
     lib/dnsserver/dnsserver.c
+    lib/CH9120/CH9120.c
 )
 
 pico_set_program_name(pigco "pigco")

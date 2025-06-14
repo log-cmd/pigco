@@ -17,12 +17,27 @@ namespace pigco_input
         readonly UdpClient _udpClient;
         readonly SwitchInput _input;
 
-        readonly IPEndPoint _remote = new(IPAddress.Parse("192.168.4.1"), 12345);
+        enum PIGCO_Type
+        {
+            PICOW_AP,
+            PICOW_STA,
+            RP2350ETH,
+        }
+
+        readonly PIGCO_Type PIGCO = PIGCO_Type.RP2350ETH;
+
+        readonly IPEndPoint _remote;
 
         readonly List<(Keys, string, Action<bool>)> _keyActions;
 
         public InputController()
         {
+            string remoteIP = "";
+            if (PIGCO == PIGCO_Type.PICOW_AP) remoteIP = "192.168.4.1";
+            else if (PIGCO == PIGCO_Type.PICOW_STA) remoteIP = "192.168.0.83";
+            else if (PIGCO == PIGCO_Type.RP2350ETH) remoteIP = "192.168.0.200";
+            _remote = new IPEndPoint(IPAddress.Parse(remoteIP), 12345);
+
             _udpClient = new();
             _input = new();
 
@@ -413,11 +428,26 @@ namespace pigco_input
             byte[] buf = SwitchReport.MakeBuf(_input);
 
             using MemoryStream ms = new();
-            ms.WriteByte(0x01);
-            ms.WriteByte(0x02);
-            ms.WriteByte(0x03);
-            ms.WriteByte(0x04);
-            ms.Write(buf, 0, buf.Length);
+            if (PIGCO != PIGCO_Type.RP2350ETH)
+            {
+                ms.WriteByte(0x01);
+                ms.WriteByte(0x02);
+                ms.WriteByte(0x03);
+                ms.WriteByte(0x04);
+                ms.Write(buf, 0, buf.Length);
+            }
+            else
+            {
+                ms.WriteByte(0x06); // magic
+                ms.WriteByte(0x14); // magic2
+                
+                ushort crc = Crc16Ccitt.Compute(buf);
+                ms.WriteByte((byte)(crc >> 8)); // CRC上位
+                ms.WriteByte((byte)(crc & 0xFF)); // CRC下位
+
+                ms.WriteByte((byte)buf.Length); // データ長
+                ms.Write(buf, 0, buf.Length); // データ本体
+            }
 
             try
             {
@@ -427,6 +457,26 @@ namespace pigco_input
             catch (Exception ex)
             {
                 Debug.WriteLine($"UDP送信失敗: {ex.Message}");
+            }
+        }
+
+        public static class Crc16Ccitt
+        {
+            public static ushort Compute(byte[] data)
+            {
+                ushort crc = 0xFFFF;
+                foreach (byte b in data)
+                {
+                    crc ^= (ushort)(b << 8);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if ((crc & 0x8000) != 0)
+                            crc = (ushort)((crc << 1) ^ 0x1021);
+                        else
+                            crc <<= 1;
+                    }
+                }
+                return crc;
             }
         }
 

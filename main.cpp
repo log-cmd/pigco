@@ -505,10 +505,111 @@ int main()
         cyw43_arch_poll();
     }
 }
+
 #elif PIGCO_RP2350ETH
+
+#include "lib/CH9120/CH9120.h"
+
+#define MAX_DATA_SIZE 64
+#define UART_TIMEOUT_MS 100
+
+// CRC16-CCITT (poly 0x1021, init 0xFFFF)
+uint16_t calc_crc16(const uint8_t *data, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t i = 0; i < len; i++)
+    {
+        crc ^= (uint16_t)data[i] << 8;
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if (crc & 0x8000)
+                crc = (crc << 1) ^ 0x1021;
+            else
+                crc <<= 1;
+        }
+    }
+    return crc;
+}
+
+bool read_timeout(uint8_t *data_out, uint16_t timeout_ms)
+{
+    uint32_t start_time = to_ms_since_boot(get_absolute_time());
+    while (!uart_is_readable(UART_ID1))
+    {
+        if (to_ms_since_boot(get_absolute_time()) - start_time >= timeout_ms)
+        {
+            return false; // タイムアウト
+        }
+    }
+    *data_out = uart_getc(UART_ID1);
+    return true;
+}
+
 int main()
 {
+    CH9120_init();
+
     app_init();
-    app_run();
+
+    multicore_launch_core1(app_run);
+
+    while (1)
+    {
+        // マジックを探す
+        uint8_t magic;
+        if (!read_timeout(&magic, UART_TIMEOUT_MS))
+            continue;
+        if (magic != 0x06)
+            continue; // マジックが一致しない場合は次のループへ
+
+        // マジック2を取得
+        uint8_t magic2;
+        if (!read_timeout(&magic2, UART_TIMEOUT_MS))
+            continue;
+        if (magic2 != 0x14)
+            continue; // マジック2が一致しない場合は次のループへ
+
+        // 16ビットチェックサムを取得
+        uint8_t checksum, checksum2;
+        if (!read_timeout(&checksum, UART_TIMEOUT_MS))
+            continue;
+        if (!read_timeout(&checksum2, UART_TIMEOUT_MS))
+            continue;
+
+        uint16_t crc16_packet = (checksum << 8) | checksum2;
+
+        // データ長を取得
+        uint8_t length;
+        if (!read_timeout(&length, UART_TIMEOUT_MS))
+            continue;
+
+        // データを取得
+        uint8_t data[MAX_DATA_SIZE];
+        bool timeout = false;
+        for (uint8_t i = 0; i < length && i < MAX_DATA_SIZE; i++)
+        {
+            if (!read_timeout(&data[i], UART_TIMEOUT_MS))
+            {
+                timeout = true;
+                break;
+            }
+        }
+        if (timeout)
+            continue;
+
+        // CRC16を計算
+        uint16_t crc16_calculated = calc_crc16(data, length);
+
+        // チェックサムを検証
+        if (crc16_calculated != crc16_packet)
+        {
+            continue; // エラー処理: 次のループへ
+        }
+
+        // TODO エラー率を計測してPCに送信してもいいかもしれない
+
+        app_recv(data, length);
+    }
 }
+
 #endif

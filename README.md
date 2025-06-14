@@ -1,13 +1,19 @@
-# PC -> Raspberry Pi Pico W -> Nintendo Switch
+# PC -> マイコン -> Nintendo Switch
 
 pigco
 ---
-PC->picowはUDP
-picow->Switchは有線
+C言語
+
+- Raspberry Pi Pico W
+- Waveshare RP2350-ETH
+
+UDPサーバーでパッドの入力を待ち受ける
 
 プロコンとしてふるまう部分を拝借
 https://github.com/DavidPagels/retro-pico-switch
 
 pigco-input
 ---
-RawInputのキーボード・マウスをスプラトゥーン3に適した操作に変換。ジャイロ対応。オンラインでは控えてね。
+C# WPF
+
+RawInputのキーボード・マウスをスプラトゥーン3に適した操作に変換。マイコンに送信
