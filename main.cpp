@@ -545,6 +545,9 @@ bool read_timeout(uint8_t *data_out, uint16_t timeout_ms)
     return true;
 }
 
+#define PACKET_MAGIC1 0x06
+#define PACKET_MAGIC2 0x14
+
 int main()
 {
     CH9120_init();
@@ -559,14 +562,14 @@ int main()
         uint8_t magic;
         if (!read_timeout(&magic, UART_TIMEOUT_MS))
             continue;
-        if (magic != 0x06)
+        if (magic != PACKET_MAGIC1)
             continue; // マジックが一致しない場合は次のループへ
 
         // マジック2を取得
         uint8_t magic2;
         if (!read_timeout(&magic2, UART_TIMEOUT_MS))
             continue;
-        if (magic2 != 0x14)
+        if (magic2 != PACKET_MAGIC2)
             continue; // マジック2が一致しない場合は次のループへ
 
         // 16ビットチェックサムを取得
@@ -582,6 +585,9 @@ int main()
         uint8_t length;
         if (!read_timeout(&length, UART_TIMEOUT_MS))
             continue;
+
+        if (length == 0 || length > MAX_DATA_SIZE)
+            continue; // 不正な長さは破棄
 
         // データを取得
         uint8_t data[MAX_DATA_SIZE];
