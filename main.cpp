@@ -25,8 +25,8 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_
 
 #if PIGCO_PICOW_AP
 
-#include "dhcpserver.h"
-#include "dnsserver.h"
+#include "lib/dhcpserver/dhcpserver.h"
+#include "lib/dnsserver/dnsserver.h"
 
 #ifndef AP_SSID
 #define AP_SSID "picow_test"
@@ -508,6 +508,7 @@ int main()
 #elif PIGCO_RP2350ETH
 int main()
 {
-    return 0;
+    app_init();
+    app_run();
 }
 #endif

@@ -46,8 +46,8 @@ add_executable(pigco
     SwitchCommon.cpp
     SwitchUsb.cpp
     main.cpp
-    dhcpserver/dhcpserver.c
-    dnsserver/dnsserver.c
+    lib/dhcpserver/dhcpserver.c 
+    lib/dnsserver/dnsserver.c
 )
 
 pico_set_program_name(pigco "pigco")
@@ -67,8 +67,6 @@ target_link_libraries(pigco
 # Add the standard include files to the build
 target_include_directories(pigco PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
-    ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
-    ${CMAKE_CURRENT_LIST_DIR}/dnsserver
 )
 
 if(BUILD_MODE STREQUAL "PICOW_AP")
