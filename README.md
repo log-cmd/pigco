@@ -2,7 +2,7 @@
 
 pigco
 ---
-C言語
+C++
 
 - Raspberry Pi Pico W
 - Waveshare RP2350-ETH
