@@ -1,7 +1,30 @@
 #include "app.h"
 #include "pico/multicore.h"
 
+#define PACKET_MAGIC1 0x06
+#define PACKET_MAGIC2 0x14
+#define MAX_DATA_SIZE 64
+
+// CRC16-CCITT (poly 0x1021, init 0xFFFF)
+uint16_t calc_crc16(const uint8_t *data, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t i = 0; i < len; i++)
+    {
+        crc ^= (uint16_t)data[i] << 8;
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if (crc & 0x8000)
+                crc = (crc << 1) ^ 0x1021;
+            else
+                crc <<= 1;
+        }
+    }
+    return crc;
+}
+
 #if PIGCO_PICOW_AP || PIGCO_PICOW_STA
+
 #include <string.h>
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
@@ -16,7 +39,23 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_
         return;
     }
 
-    app_recv((uint8_t *)p->payload, p->tot_len);
+    uint8_t *payload = (uint8_t *)p->payload;
+
+    if (p->len > 4 && payload[0] == PACKET_MAGIC1 && payload[1] == PACKET_MAGIC2)
+    {
+        uint16_t crc_packet = (payload[2] << 8) | payload[3];
+        uint8_t data_size = payload[4];
+        if ((p->len == 5 + data_size) && (data_size < MAX_DATA_SIZE))
+        {
+            uint8_t *data = payload + 5;
+            uint16_t crc_calculated = calc_crc16(data, data_size);
+
+            if (crc_calculated == crc_packet)
+            {
+                app_recv(data, data_size);
+            }
+        }
+    }
 
     pbuf_free(p);
 }
@@ -510,26 +549,7 @@ int main()
 
 #include "lib/CH9120/CH9120.h"
 
-#define MAX_DATA_SIZE 64
 #define UART_TIMEOUT_MS 100
-
-// CRC16-CCITT (poly 0x1021, init 0xFFFF)
-uint16_t calc_crc16(const uint8_t *data, uint16_t len)
-{
-    uint16_t crc = 0xFFFF;
-    for (uint16_t i = 0; i < len; i++)
-    {
-        crc ^= (uint16_t)data[i] << 8;
-        for (uint8_t j = 0; j < 8; j++)
-        {
-            if (crc & 0x8000)
-                crc = (crc << 1) ^ 0x1021;
-            else
-                crc <<= 1;
-        }
-    }
-    return crc;
-}
 
 bool read_timeout(uint8_t *data_out, uint16_t timeout_ms)
 {
@@ -544,9 +564,6 @@ bool read_timeout(uint8_t *data_out, uint16_t timeout_ms)
     *data_out = uart_getc(UART_ID1);
     return true;
 }
-
-#define PACKET_MAGIC1 0x06
-#define PACKET_MAGIC2 0x14
 
 int main()
 {

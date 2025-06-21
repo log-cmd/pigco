@@ -428,15 +428,6 @@ namespace pigco_input
             byte[] buf = SwitchReport.MakeBuf(_input);
 
             using MemoryStream ms = new();
-            if (PIGCO != PIGCO_Type.RP2350ETH)
-            {
-                ms.WriteByte(0x01);
-                ms.WriteByte(0x02);
-                ms.WriteByte(0x03);
-                ms.WriteByte(0x04);
-                ms.Write(buf, 0, buf.Length);
-            }
-            else
             {
                 ms.WriteByte(0x06); // magic
                 ms.WriteByte(0x14); // magic2

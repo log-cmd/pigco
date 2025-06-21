@@ -41,7 +41,6 @@ uint8_t from_udp_buffer[22];
 
 void app_recv(uint8_t *data, size_t len)
 {
-#if PIGCO_RP2350ETH
     if (len == 22)
     {
         enterBufferLock();
@@ -49,18 +48,6 @@ void app_recv(uint8_t *data, size_t len)
         exitBufferLock();
         notify_flag = true;
     }
-#else
-    if (len >= 4 && data[0] == 0x01 && data[1] == 0x02 && data[2] == 0x03 && data[3] == 0x04)
-    {
-        if (len >= 4 + 22)
-        {
-            enterBufferLock();
-            memcpy(from_udp_buffer, data + 4, 22);
-            exitBufferLock();
-            notify_flag = true;
-        }
-    }
-#endif
 }
 
 void app_init()
