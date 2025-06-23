@@ -5,7 +5,7 @@ using System.Windows.Interop;
 
 namespace pigco_input
 {
-    public class RawInputHandler
+    public partial class RawInputHandler
     {
         // 定数定義
         private const uint RID_INPUT = 0x10000003; // Raw Input Command
@@ -116,14 +116,15 @@ namespace pigco_input
             Keyboard = RIM_TYPEKEYBOARD
         }
 
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool RegisterRawInputDevices(
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool RegisterRawInputDevices(
             [In] RAWINPUTDEVICE[] pRawInputDevices,
             uint uiNumDevices,
             uint cbSize);
 
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern uint GetRawInputData(
+        [LibraryImport("user32.dll", SetLastError = true)]
+        private static partial uint GetRawInputData(
             IntPtr hRawInput,
             uint uiCommand,
             IntPtr pData,
@@ -144,7 +145,7 @@ namespace pigco_input
             }
         }
 
-        private void RegisterDevices(IntPtr windowHandle)
+        private static void RegisterDevices(IntPtr windowHandle)
         {
             var devices = new RAWINPUTDEVICE[2];
 
@@ -160,7 +161,7 @@ namespace pigco_input
             devices[1].Flags = 0;
             devices[1].Target = windowHandle;
 
-            if (!RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE))))
+            if (!RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             }
@@ -182,13 +183,13 @@ namespace pigco_input
         public void ProcessInput(IntPtr lParam)
         {
             uint dataSize = 0;
-            GetRawInputData(lParam, RID_INPUT, IntPtr.Zero, ref dataSize, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER)));
+            _ = GetRawInputData(lParam, RID_INPUT, IntPtr.Zero, ref dataSize, (uint)Marshal.SizeOf<RAWINPUTHEADER>());
 
             IntPtr data = Marshal.AllocHGlobal((int)dataSize);
 
             try
             {
-                if (GetRawInputData(lParam, RID_INPUT, data, ref dataSize, (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER))) == dataSize)
+                if (GetRawInputData(lParam, RID_INPUT, data, ref dataSize, (uint)Marshal.SizeOf<RAWINPUTHEADER>()) == dataSize)
                 {
                     RAWINPUT raw = Marshal.PtrToStructure<RAWINPUT>(data);
 
