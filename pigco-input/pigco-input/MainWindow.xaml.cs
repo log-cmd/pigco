@@ -1,10 +1,5 @@
 ﻿using Reactive.Bindings;
-using System.Collections;
-using System.Data.SqlTypes;
 using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -50,10 +45,25 @@ namespace pigco_input
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
-        [LibraryImport("user32.dll")]
+        [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
 
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetCursorPos(out POINT lpPoint);
+
+        [LibraryImport("user32.dll", SetLastError = true)]
+        private static partial int GetSystemMetrics(int nIndex);
+
+        private const int SM_CXSIZE = 30;     // ボタンの幅
+        private const int SM_CYSIZE = 31;     // ボタンの高さ
+        private const int SM_CYCAPTION = 4;   // タイトルバーの高さ
+        private const int SM_CXSIZEFRAME = 32; // フレーム幅
 
         // ウィンドウロード時に一度カーソル拘束を設定（必要に応じて）
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -65,9 +75,44 @@ namespace pigco_input
         }
 
         // ウィンドウがアクティブになったときにクライアント領域へカーソルを拘束
+        // ×ボタンで閉じる動作優先
         private void Window_Activated(object sender, EventArgs e)
         {
-            if (IsActive)
+            if (!IsActive)
+                return;
+
+            // ウィンドウハンドル取得
+            var hwnd = new WindowInteropHelper(this).Handle;
+
+            // ウィンドウの位置とサイズ取得
+            if (!GetWindowRect(hwnd, out RECT windowRect))
+            {
+                Debug.WriteLine("Failed to get window rectangle.");
+                return;
+            }
+
+            // システムメトリクスからフレーム幅とボタンのサイズ取得
+            int frameWidth = GetSystemMetrics(SM_CXSIZEFRAME);
+            int buttonWidth = GetSystemMetrics(SM_CXSIZE);
+            int buttonHeight = GetSystemMetrics(SM_CYSIZE);
+
+            // ×ボタンの矩形を計算（右上からボタン幅分左にずらす）
+            int closeRight = windowRect.Right - frameWidth;
+            int closeLeft = closeRight - buttonWidth;
+            int closeTop = windowRect.Top + frameWidth;
+            int closeBottom = closeTop + buttonHeight;
+
+            // マウスカーソルの位置取得
+            GetCursorPos(out POINT cursor);
+
+            // ×ボタンの上にマウスがあるか判定
+            bool isOnClose =
+                cursor.X >= closeLeft && cursor.X <= closeRight &&
+                cursor.Y >= closeTop && cursor.Y <= closeBottom;
+
+            Debug.WriteLine($"isOnClose={isOnClose}");
+
+            if (!isOnClose)
             {
                 SetCursorClip();
             }
